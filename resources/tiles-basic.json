@@ -1,0 +1,159 @@
+{  
+  "A": {
+    "count": 2,
+    "edges": ["F", "F", "FR", "F"],
+    "fields": [255],
+    "roads": [4],
+    "cloister": true
+  },
+  "B": {
+    "count": 4,
+    "edges": ["F", "F", "F", "F"],
+    "fields": [255],
+    "cloister": true    
+  },
+  "C": {
+    "count": 1,
+    "edges": ["C", "C", "C", "C"],
+    "cities": [15],
+    "pennant": 1
+  },
+  "D": {
+    "count": 4,
+    "edges": ["C", "FR", "F", "FR"],
+    "fields": [132, 120],
+    "cities": [1]
+  },
+  "E": {
+    "count": 5,
+    "edges": ["C", "F", "F", "F"],
+    "fields": [252],
+    "cities": [1]
+  },
+  "F": {
+    "count": 2,
+    "edges": ["F", "C", "F", "C"],
+    "fields": [3, 48],
+    "cities": [10],
+    "pennant": 1
+  },
+  "G": {
+    "count": 1,
+    "edges": ["F", "C", "F", "C"],
+    "fields": [3, 48],
+    "cities": [10]
+  },
+  "H": {
+    "count": 3,
+    "edges": ["F", "C", "F", "C"],
+    "fields": [51],
+    "cities": [2, 8]
+  },
+  "I": {
+    "count": 2,
+    "edges": ["C", "F", "F", "C"],
+    "fields": [60],
+    "cities": [1, 8]
+  },
+  "J": {
+    "count": 3,
+    "edges": ["C", "R", "R", "F"],
+    "fields": [230, 24],
+    "roads": [6],
+    "cities": [1]
+  },
+  "K": {
+    "count": 3,
+    "edges": ["C", "F", "R", "R"],
+    "fields": [156, 96],
+    "roads": [12],
+    "cities": [1]
+  },
+  "L": {
+    "count": 3,
+    "edges": ["C", "R", "R", "R"],
+    "fields": [132, 24, 96],
+    "roads": [2, 4, 8],
+    "cities": [1]
+  },
+  "M": {
+    "count": 2,
+    "edges": ["C", "R", "R", "C"],
+    "fields": [60],
+    "cities": [9],
+    "pennant": 1
+  },
+  "N": {
+    "count": 3,
+    "edges": ["C", "R", "R", "C"],
+    "fields": [60],
+    "cities": [9]
+  },
+  "O": {
+    "count": 2,
+    "edges": ["C", "R", "R", "C"],
+    "fields": [36, 24],
+    "roads": [6],
+    "cities": [9],
+    "pennant": 1
+  },
+  "P": {
+    "count": 3,
+    "edges": ["C", "R", "R", "C"],
+    "fields": [36, 24],
+    "roads": [6],
+    "cities": [9]
+  },
+  "Q": {
+    "count": 1,
+    "edges": ["C", "C", "F", "C"],
+    "fields": [48],
+    "cities": [11],
+    "pennant": 1
+  },
+  "R": {
+    "count": 3,
+    "edges": ["C", "C", "F", "C"],
+    "fields": [48],
+    "cities": [11]
+  },
+  "S": {
+    "count": 2,
+    "edges": ["C", "C", "R", "C"],
+    "fields": [16, 32],
+    "roads": [4],
+    "cities": [11],
+    "pennant": 1
+  },
+  "T": {
+    "count": 1,
+    "edges": ["C", "C", "R", "C"],
+    "fields": [16, 32],
+    "roads": [4],
+    "cities": [11]
+  },
+  "U": {
+    "count": 8,
+    "edges": ["F", "R", "F", "R"],
+    "fields": [135, 120],
+    "roads": [10]
+  },
+  "V": {
+    "count": 9,
+    "edges": ["F", "F", "R", "R"],
+    "fields": [143, 96],
+    "roads": [12]
+  },
+  "W": {
+    "count": 4,
+    "edges": ["F", "R", "R", "R"],
+    "fields": [135, 24, 96],
+    "roads": [2, 4, 8]
+  },
+  "X": {
+    "count": 1,
+    "edges": ["R", "R", "R", "R"],
+    "fields": [6, 24, 96, 129],
+    "roads": [1, 2, 4, 8]
+  }
+}
