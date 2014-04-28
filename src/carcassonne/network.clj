@@ -31,10 +31,10 @@
     (enqueue ch frame)))
 
 (defn update-client [client ch]
-  (let [port (-> ch meta :aleph/netty-channel .getRemoteAddress .getPort)
-        id   (str (:address client) ":" port)
-        chan (partial send-msg ch)]
-    (assoc client :id id :port port :chan chan)))
+  (let [port    (-> ch meta :aleph/netty-channel .getRemoteAddress .getPort)
+        id      (str (:address client) ":" port)
+        send-fn (partial send-msg ch)]
+    (assoc client :id id :port port :send-fn send-fn)))
 
 (defn connect-client [callback client]
   (info "Client connected" client)
