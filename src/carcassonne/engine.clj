@@ -79,6 +79,8 @@
 ;; (defn step9 [turn-state game-state]
 ;;   (return-follower [follower knight thief monk builder]))
 
+(defn valid-steps? [steps]
+  (seq steps))
 
 (defn difference [& seqs]
   (->> seqs
@@ -123,11 +125,12 @@
     :y 0}])
 
 (defn next-step [{:keys [state steps extensions]}]
-  (case state
-    ;; :created
-    :started (step-place-tile steps extensions)
-    ;; :finished
-    :5000))
+  (cond
+   (not (valid-steps? steps)) :5000 ;; at least initial tile
+   ;; :created
+   (= state :started)         (step-place-tile steps extensions)
+   ;; :finished
+   :else                      :5000))
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

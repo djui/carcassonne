@@ -44,8 +44,12 @@
 (deftest next-step-state-unknown-test
   (is (= :5000 (next-step {:state :foo}))))
 
-(deftest next-step-state-started-test
+(deftest empty-board-test
+  (is (= :5000 (next-step nil))))
+
+(deftest next-step-state-started-initial-tile-test
   (binding [r/*rnd* (java.util.Random. 42)] ;; FIXME: Doesn't really propagate
-    (is (= :V (:tile-id (next-step {:state :started
-                                    :extensions []
-                                    :steps []}))))))
+    (let [steps (initial-board)]
+      (is (= :V (:tile-id (next-step {:state :started
+                                      :extensions []
+                                      :steps steps})))))))
