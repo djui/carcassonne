@@ -3,33 +3,162 @@
             [clojure.data.generators :as r]))
 
 
+;;     create-game
+;;           |
+;;           v
+;;       join-game
+;;           |
+;;           v
+;;      start-game
+;;           |
+;;           v
+;;  [buy-back-prisoners]
+;;           | +---------+
+;;           v v         |
+;;      place-tile       |
+;;           |           |
+;;           v           |
+;;      place-units      |
+;;           |           |
+;;           v           |
+;;  [exchange-prisoners] |
+;;           | +------+  |
+;;           v v      |  |
+;;      [move-dragon] |  |
+;;           | |      |  |
+;;           | +------+  |
+;;           +-----------+
+
 ;;; Utilities
+
+(defn difference
+  "Left-asssociative sequence difference over seqs. This differs from
+  clojure.set/difference in that seqs can have duplicates."
+  [& seqs]
+  (->> seqs
+       (map frequencies)
+       (apply merge-with -)
+       (mapcat (fn [[x n]] (repeat n x)))))
+
+(defn positions [pred coll]
+  (keep-indexed #(when (pred %2) %1)))
 
 
 ;;; Internals
 
-;; (defn get-tile [[x y] board]
-;;   (some #(and (= x (:x %))
-;;               (= y (:y %))) board))
+(defn all-tiles
+  "A map of all tiles as maps."
+  ([] (all-tiles env/extensions))
+  ([extensions]
+     (->> extensions
+          (cons :basic)
+          (map #(env/tiles %))
+          (apply merge))))
 
-;; (defn adjacent-tiles [[x y] board]
-;;   [(get-tile [     x  (dec y)] board)
-;;    (get-tile [(inc x)      y ] board)
-;;    (get-tile [     x  (inc y)] board)
-;;    (get-tile [(dec x)      y ] board)])
+(defn all-tile-ids
+  "A set of all tile ids."
+  ([] (all-tile-ids env/extensions))
+  ([extensions]
+     (set (keys (all-tiles extensions)))))
 
-;; (defn valid-adjacent? [dir adjacent tile]
-;;   (let [tile-dir     (mod (- dir (:orientation tile))       4)
-;;         adjacent-dir (mod (- dir (:orientation adjacent) 2) 4)]
-;;     (= ((:edges tile)     tile-dir)
-;;        ((:edges adjacent) adjacent-dir))))
+(defn all-tiles-flattened
+  "A list of all tiles flattened/repeated as maps including :id."
+  ([] (all-tiles-flattened env/extensions))
+  ([extensions]
+     (mapcat
+      (fn [[id tile]] (repeat (get tile :count 1) (assoc tile :id id)))
+      (all-tiles extensions))))
 
-;; (defn legal-move? [coord tile board]
-;;   (let [adjacents (adjacent-tiles tile board)
-;;         valid? (fn [[k v]] (or (nil? v) (valid-adjacent? k v tile)))]
-;;     (and (nil? (get-tile coord board))
-;;          (not-every? nil? (vals adjacents))
-;;          (every? valid? (map-indexed adjacents)))))
+(defn all-tile-ids-flattened
+  "A list of all tiles flattened/repeated as keywords."
+  ([] (all-tile-ids-flattened env/extensions))
+  ([extensions]
+     (map :id (all-tiles-flattened extensions))))
+
+(defn lookup-tile
+  "Given a tile id lookup its definition map."
+  ([id] (lookup-tile id env/extensions))
+  ([id extensions]
+     (id (all-tiles extensions))))
+
+(defn get-tile
+  "From a list of steps constructing a board"
+  [[x y] tiles]
+  (some #(and (= x (:x %))
+              (= y (:y %))) tiles))
+
+(defn adjacent-tiles
+  ([tiles {:keys [x y]}] (adjacent-tiles tiles x y))
+  ([tiles x y]
+     (let [n [x (dec y)] e [(inc x) y]
+           s [x (inc y)] w [(dec x) y]]
+       [[n (get-tile n tiles)] [e (get-tile e tiles)]
+        [s (get-tile s tiles)] [w (get-tile w tiles)]])))
+
+(defn valid-steps? [steps]
+  (seq steps))
+
+(defn valid-adjacent? [tile dir adjacent]
+  (or (nil? adjacent)
+      (let [tile-dir     (mod (- dir (:orientation tile))       4)
+            adjacent-dir (mod (- dir (:orientation adjacent) 2) 4)]
+        (= ((:edges tile)     tile-dir)
+           ((:edges adjacent) adjacent-dir)))))
+
+(defn valid-placement? [tiles tile]
+  (->> tile
+       (adjacent-tiles tiles)
+       (map-indexed cons)
+       (every? #(valid-adjacent? tile (nth % 0) (nth % 2)))))
+
+(defn board-edges [tiles]
+  (->> tiles
+       reverse
+       (mapcat #(adjacent-tiles tiles %))
+       (keep (fn [[dir tile]] (when (nil? tile) dir)))))
+
+(defn tile-placable? [tiles tile]
+  (some identity
+        (for [[x y] (board-edges tiles), o [0 1 2 3]]
+          (valid-placement? tiles (assoc tile :orientation o, :x x, :y y)))))
+
+(defn draw-tile [placed-tiles extensions]
+  (binding [r/*rnd* (java.util.Random. env/seed)]
+    (let [all-ids       (all-tile-ids-flattened extensions)
+          placed-ids    (map :id placed-tiles)
+          remaining-ids (difference all-ids placed-ids)
+          random-id     (r/rand-nth remaining-ids)]
+      ;; NOTE: For convenience this differs from the official rules.
+      (if (tile-placable? placed-tiles (lookup-tile random-id))
+        random-id
+        (draw-tile placed-tiles extensions)))))
+
+(defn step-place-tile [steps extensions]
+  (let [placed-tiles (->> steps
+                          (filter #(= (:step %) "place-tile"))
+                          (map #(merge % (lookup-tile (:id %)))))
+        tile-id (draw-tile placed-tiles extensions)]
+    {:step "place-tile"
+     :id tile-id}))
+
+
+;;; Interface
+
+(defn initial-board []
+  [{:step "place-tile"
+    :id :D
+    :orientation 0
+    :x 0
+    :y 0}])
+
+(defn next-step [{:keys [state steps extensions]}]
+  (cond
+   (not (valid-steps? steps)) :5000 ;; at least initial tile
+   ;; :created
+   (= state :started)         (step-place-tile steps extensions)
+   ;; :finished
+   :else                      :5000))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,87 +208,7 @@
 ;; (defn step9 [turn-state game-state]
 ;;   (return-follower [follower knight thief monk builder]))
 
-(defn valid-steps? [steps]
-  (seq steps))
-
-(defn difference [& seqs]
-  (->> seqs
-       (map frequencies)
-       (apply merge-with -)
-       (mapcat (fn [[x n]] (repeat n x)))))
-
-(defn remaining-tiles [all played]
-  (difference all played))
-
-(defn played-tiles [steps]
-  (->> steps
-       (filter #(= (:step %) "place-tile"))
-       (map #(keyword (:tile-id %)))))
-
-(defn all-tiles [extensions]
-  (->> (cons :basic extensions)
-       (mapcat #(env/tiles %))
-       (mapcat (fn [[k v]] (repeat (get v :count 1) k)))))
-
-(defn draw-tile [steps extensions]
-  (let [all       (all-tiles extensions)
-        played    (played-tiles steps)
-        remaining (remaining-tiles all played)
-        random    (r/rand-nth remaining)]
-    ;; FIXME: Notify everyone if tile can't be placed.
-    random))
-
-(defn step-place-tile [steps extensions]
-  (let [tile-id (draw-tile steps extensions)]
-    {:step "place-tile"
-     :tile-id tile-id}))
-
-
-;;; Interface
-
-(defn initial-board []
-  [{:step "place-tile"
-    :tile-id "D"
-    :orientation "N"
-    :x 0
-    :y 0}])
-
-(defn next-step [{:keys [state steps extensions]}]
-  (cond
-   (not (valid-steps? steps)) :5000 ;; at least initial tile
-   ;; :created
-   (= state :started)         (step-place-tile steps extensions)
-   ;; :finished
-   :else                      :5000))
-
-
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;     create-game
-;;           |
-;;           v
-;;       join-game
-;;           |
-;;           v
-;;      start-game
-;;           |
-;;           v
-;;  [buy-back-prisoners]
-;;           | +---------+
-;;           v v         |
-;;      place-tile       |
-;;           |           |
-;;           v           |
-;;      place-units      |
-;;           |           |
-;;           v           |
-;;  [exchange-prisoners] |
-;;           | +------+  |
-;;           v v      |  |
-;;      [move-dragon] |  |
-;;           | |      |  |
-;;           | +------+  |
-;;           +-----------+
 
 ;; out {"version": 1, "game_id": "foo", "step": "buy-back-prisoners", "state": STATE}
 ;; in  {"version": 1, "game_id": "foo", "step": "buy-back-prisoners", "action": true"}

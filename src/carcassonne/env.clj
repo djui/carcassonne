@@ -1,12 +1,14 @@
 (ns carcassonne.env
-  (:require [clojure.data.json :refer [read-str]]
-            [clojure.java.io :refer [resource]]))
+  (:require [clojure.data.generators :as r]
+            [clojure.data.json       :refer [read-str]]
+            [clojure.java.io         :refer [resource]]))
 
 
 ;;; Internals
 
 (defn read-json [file]
   (-> file resource slurp (read-str :key-fn keyword)))
+
 
 ;;; Interface
 
@@ -119,3 +121,5 @@
 
 (def tiles
   {:basic (read-json "tiles-basic.json")})
+
+(def seed 42)

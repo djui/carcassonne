@@ -46,7 +46,7 @@
 
 (defn frame-handler [callback ch client frame]
   (debug "Incoming frame" ch (:id client) frame)
-  (let [[msg err] (lift decode-json frame)]
+  (let [[msg err] (lift decode-json frame true)]
     (when err (warn "Corrupt message" frame))
     (callback client msg)))
 

@@ -9,13 +9,7 @@
 (deftest difference-test
   (is (= [1] (difference [1 1 2] [1 2]))))
 
-(deftest played-tiles-test
-  (is (= [:A :C :B] (played-tiles [{:step "place-tile" :tile-id :A}
-                                   {:step "foo"}
-                                   {:step "place-tile" :tile-id :C}
-                                   {:step "place-tile" :tile-id :B}]))))
-
-(deftest all-tiles-test
+(deftest all-tile-ids-test
   (is (= [:L :L :L
           :M :M
           :I :I
@@ -39,7 +33,7 @@
           :U :U :U :U :U :U :U :U
           :S :S
           :N :N :N
-          :K :K :K] (all-tiles []))))
+          :K :K :K] (all-tile-ids-flattened []))))
 
 (deftest next-step-state-unknown-test
   (is (= :5000 (next-step {:state :foo}))))
@@ -48,8 +42,7 @@
   (is (= :5000 (next-step nil))))
 
 (deftest next-step-state-started-initial-tile-test
-  (binding [r/*rnd* (java.util.Random. 42)] ;; FIXME: Doesn't really propagate
-    (let [steps (initial-board)]
-      (is (= :V (:tile-id (next-step {:state :started
-                                      :extensions []
-                                      :steps steps})))))))
+  (let [steps (initial-board)]
+    (is (= :V (:id (next-step {:state :started
+                               :extensions []
+                               :steps steps}))))))
