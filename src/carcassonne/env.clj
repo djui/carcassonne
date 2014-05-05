@@ -101,20 +101,20 @@
    :4005 {:version version, :code 4005, :status 400, :message "invalid extension(s)"}
    :4006 {:version version, :code 4006, :status 400, :message "invalid player name"}
    :4007 {:version version, :code 4007, :status 400, :message "invalid argument(s)"}
-
+   
    :4040 {:version version, :code 4040, :status 404, :message "unknown step"}
    :4041 {:version version, :code 4041, :status 404, :message "game not found"}
-
+   
    :4090 {:version version, :code 4090, :status 409, :message "state conflict; retry"}
    :4091 {:version version, :code 4091, :status 409, :message "game already exists"}
    :4092 {:version version, :code 4092, :status 409, :message "player already exists"}
    :4093 {:version version, :code 4093, :status 409, :message "game already started"}
-
+   
    :4100 {:version version, :code 4100, :status 410, :message "game already finished"}
-
+   
    :4120 {:version version, :code 4120, :status 412, :message "too few players"}
    :4121 {:version version, :code 4121, :status 412, :message "too many players"}
-
+   
    ;; 5xx
    :5000 {:version version, :code 5000, :status 500, :message "invalid game state"}
    :5050 {:version version, :code 5050, :status 505, :message "version not supported"}})

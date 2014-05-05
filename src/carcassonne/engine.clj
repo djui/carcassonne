@@ -1,6 +1,7 @@
 (ns carcassonne.engine
   (:require [carcassonne.env         :as env]
-            [clojure.data.generators :as r]))
+            [clojure.data.generators :as r]
+            [taoensso.timbre         :refer [spy debug info warn error fatal]]))
 
 
 ;;     create-game
@@ -84,8 +85,7 @@
 (defn get-tile
   "From a list of steps constructing a board"
   [[x y] tiles]
-  (some #(and (= x (:x %))
-              (= y (:y %))) tiles))
+  (some #(when (= [x y] [(:x %) (:y %)]) %) tiles))
 
 (defn adjacent-tiles
   ([tiles {:keys [x y]}] (adjacent-tiles tiles x y))
@@ -94,6 +94,12 @@
            s [x (inc y)] w [(dec x) y]]
        [[n (get-tile n tiles)] [e (get-tile e tiles)]
         [s (get-tile s tiles)] [w (get-tile w tiles)]])))
+
+(defn board-edges [tiles]
+  (->> tiles
+       reverse
+       (mapcat #(adjacent-tiles tiles %))
+       (keep (fn [[dir tile]] (when (nil? tile) dir)))))
 
 (defn valid-steps? [steps]
   (seq steps))
@@ -111,12 +117,6 @@
        (map-indexed cons)
        (every? #(valid-adjacent? tile (nth % 0) (nth % 2)))))
 
-(defn board-edges [tiles]
-  (->> tiles
-       reverse
-       (mapcat #(adjacent-tiles tiles %))
-       (keep (fn [[dir tile]] (when (nil? tile) dir)))))
-
 (defn tile-placable? [tiles tile]
   (some identity
         (for [[x y] (board-edges tiles), o [0 1 2 3]]
@@ -131,7 +131,7 @@
       ;; NOTE: For convenience this differs from the official rules.
       (if (tile-placable? placed-tiles (lookup-tile random-id))
         random-id
-        (draw-tile placed-tiles extensions)))))
+        (draw-tile placed-tiles extensions))))) ;; FIXME: Recursion death
 
 (defn step-place-tile [steps extensions]
   (let [placed-tiles (->> steps
