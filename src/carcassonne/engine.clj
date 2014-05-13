@@ -4,6 +4,8 @@
             [taoensso.timbre         :refer [spy debug info warn error fatal]]))
 
 
+;;; _ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;     create-game
 ;;           |
 ;;           v
@@ -30,7 +32,8 @@
 ;;           | +------+  |
 ;;           +-----------+
 
-;;; Utilities
+
+;;; Utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn difference
   "Left-asssociative sequence difference over seqs. This differs from
@@ -45,7 +48,9 @@
   (keep-indexed #(when (pred %2) %1)))
 
 
-;;; Internals
+;;; Internals ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn all-tiles
   "A map of all tiles as maps."
@@ -95,11 +100,17 @@
        [[n (get-tile n tiles)] [e (get-tile e tiles)]
         [s (get-tile s tiles)] [w (get-tile w tiles)]])))
 
+
+;; Board ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn board-edges [tiles]
   (->> tiles
        reverse
        (mapcat #(adjacent-tiles tiles %))
        (keep (fn [[dir tile]] (when (nil? tile) dir)))))
+
+
+;; Validation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn valid-steps? [steps]
   (seq steps))
@@ -122,6 +133,9 @@
         (for [[x y] (board-edges tiles), o [0 1 2 3]]
           (valid-placement? tiles (assoc tile :orientation o, :x x, :y y)))))
 
+
+;; Steps ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn draw-tile [placed-tiles extensions]
   (binding [r/*rnd* (java.util.Random. env/seed)]
     (let [all-ids       (all-tile-ids-flattened extensions)
@@ -142,7 +156,7 @@
      :id tile-id}))
 
 
-;;; Interface
+;;; Interface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn initial-board []
   [{:step "place-tile"
