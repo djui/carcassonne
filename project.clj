@@ -13,5 +13,6 @@
                  [org.clojure/clojure "1.6.0"]
                  ;;[org.clojure/core.async "0.1.278.0-76b25b-alpha"]
                  [org.clojure/data.generators "0.1.2"]
-                 [org.clojure/data.json "0.2.4"]])
+                 [org.clojure/data.json "0.2.4"]
+                 [prismatic/schema "0.2.2"]])
   

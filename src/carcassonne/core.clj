@@ -6,7 +6,40 @@
             [clojure.set         :refer [subset? superset?]]
             [clojure.string      :refer [blank?]]
             [gloss.core          :refer [string]]
+            [schema.core         :as    s]
             [taoensso.timbre     :refer [spy debug info warn error fatal]]))
+
+
+;;; Types ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def Client
+  {:id s/Str
+   :port s/Int
+   :send-fn s/Str}) ;; s/Fn
+
+(def Message
+  {:version s/Str
+   :step s/Str
+   :game s/Str
+   (s/optional-key :args) {(s/optional-key :player-name) s/Str
+                           (s/optional-key :extensions) [s/Str]}})
+
+(def Step [])
+
+(def Steps
+  [Step])
+
+(def Tile
+  {:id s/Str
+   :edges [s/Str]
+   (s/optional-key :fields) [s/Int]
+   (s/optional-key :roads) [s/Int]
+   (s/optional-key :cities) [s/Int]
+   (s/optional-key :cloister) s/Bool
+   (s/optional-key :pennant) s/Int})
+
+(def Tiles
+  {s/Str Tile})
 
 
 ;;; Globals ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
