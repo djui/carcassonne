@@ -9,10 +9,8 @@
   :profiles {:uberjar {:aot :all}}
   :dependencies [[aleph "0.3.2"]
                  [com.taoensso/timbre "3.1.6"]
-                 ;;[egamble/let-else "1.0.6"]
                  [org.clojure/clojure "1.6.0"]
-                 ;;[org.clojure/core.async "0.1.278.0-76b25b-alpha"]
+                 [org.clojure/core.async "0.1.303.0-886421-alpha"]
                  [org.clojure/data.generators "0.1.2"]
                  [org.clojure/data.json "0.2.4"]
                  [prismatic/schema "0.2.2"]])
-  

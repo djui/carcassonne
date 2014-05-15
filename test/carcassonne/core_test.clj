@@ -7,8 +7,8 @@
 ;;; Fixtures
 
 (use-fixtures :each (fn [f]
-                      (reset! *clients* {})
-                      (reset! *games* {})
+                      (reset! clients {})
+                      (reset! games {})
                       (f)))
 
 ;;; Internals

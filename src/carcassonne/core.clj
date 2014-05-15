@@ -3,6 +3,7 @@
   (:require [carcassonne.engine  :as    engine]
             [carcassonne.env     :as    env]
             [carcassonne.network :refer [start-server]]
+            [clojure.core.async  :refer [>! >!! <! <!! chan go-loop]]
             [clojure.set         :refer [subset? superset?]]
             [clojure.string      :refer [blank?]]
             [gloss.core          :refer [string]]
@@ -12,40 +13,63 @@
 
 ;;; Types ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def Client
-  {:id s/Str
-   :port s/Int
-   :send-fn s/Str}) ;; s/Fn
-
 (def Message
-  {:version s/Str
-   :step s/Str
-   :game s/Str
+  {:version               s/Str
+   :step                  s/Str
+   :game                  s/Str
    (s/optional-key :args) {(s/optional-key :player-name) s/Str
                            (s/optional-key :extensions) [s/Str]}})
 
-(def Step [])
-
-(def Steps
-  [Step])
-
 (def Tile
-  {:id s/Str
-   :edges [s/Str]
-   (s/optional-key :fields) [s/Int]
-   (s/optional-key :roads) [s/Int]
-   (s/optional-key :cities) [s/Int]
+  {:id                        s/Str
+   :edges                    [s/Str]
+   (s/optional-key :fields)  [s/Int]
+   (s/optional-key :roads)   [s/Int]
+   (s/optional-key :cities)  [s/Int]
    (s/optional-key :cloister) s/Bool
-   (s/optional-key :pennant) s/Int})
+   (s/optional-key :pennant)  s/Int})
 
 (def Tiles
   {s/Str Tile})
 
+(def Extension
+  (s/Or :basic s/Keyword))
+
+(def Extensions
+  #{Extension})
+
+(def Step
+  [])
+
+(def Steps
+  [Step])
+
+(def Client-id
+  s/Str)
+
+(def Client
+  {:id      Client-Id
+   :port    s/Int
+   :send-fn s/Str}) ;; s/Fn
+
+(def Clients
+  {s/Str Client})
+
+(def Game-Id
+  (s/Str))
+
+(def Games
+  {Game-Id {:state      (s/Enum :created :started :finished)
+            :extensions Extensions
+            :players    {Client-Id {:name s/Str}}
+            :order      [Client-Id]
+            :steps      Steps}})
+
 
 ;;; Globals ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:dynamic *clients* (atom {}))
-(def ^:dynamic *games*   (atom {}))
+(def clients (atom {}))
+(def games   (atom {}))
 
 
 ;;; Utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,25 +83,23 @@
 
 ;; Messaging ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;ch (<! (start-server opts)) ;; [[client msg-in]]
-;;(>! ch [client msg-out])
-
 (defn >! [client-ids code-or-msg]
   (let [send-fns (->> client-ids
                       shuffle
                       info
-                      (map #(get-in @*clients* [% :send-fn]))
+                      (map #(get-in @clients [% :send-fn]))
                       (apply juxt))
-        msg (if (keyword? code-or-msg)
+        
+        (send-fns msg)))
+  
+(defn unicast! [code-or-msg client-id]
+  (let [msg (if (keyword? code-or-msg)
               (env/codes code-or-msg)
               code-or-msg)]
-    (send-fns msg)))
+    (>!! (get-in @clients [client-id :ch]) code-or-msg)))
 
-(defn unicast! [client-id code-or-msg]
-  (>! [client-id] code-or-msg))
-
-(defn broadcast! [code-or-msg]
-  (>! (->> @*clients* vals (map :id)) code-or-msg))
+(defn broadcast! [code-or-msg game-id]
+  (map #(unicast code-or-msg %) (get-in @games [game-id :order])))
 
 
 ;; Validation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +129,7 @@
 ;; Steps ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn join-game [game-id client-id {:keys [extensions player-name]}]
-  (let [games   @*games*
+  (let [games   @games
         game    (get games game-id)
         state   (:state game)
         players (:players game)]
@@ -120,12 +142,12 @@
                   game' (-> game
                             (assoc-in [:players client-id :name] name)
                             (assoc :extensions extensions, :state :created))]
-              (if (compare-and-set! *games* games (assoc games game-id game'))
+              (if (compare-and-set! games games (assoc games game-id game'))
                 (unicast! client-id :2011)
                 (unicast! client-id :4090))))))
 
 (defn start-game [game-id client-id]
-  (let [games   @*games*
+  (let [games   @games
         game    (get games game-id)
         state   (:state game)
         players (:players game)]
@@ -136,10 +158,10 @@
       :else (let [order (shuffle (keys players))
                   steps (engine/initial-board)
                   game' (assoc game :state :started, :order order, :steps steps)]
-              (if (compare-and-set! *games* games (assoc games game-id game'))
+              (if (compare-and-set! games games (assoc games game-id game'))
                 (do
                   (unicast! client-id :2001)
-                  (let [games @*games*
+                  (let [games @games
                         game (get games game-id)
                         actions (engine/next-step game)]
                     (if actions nil nil)))
@@ -166,11 +188,12 @@
     (not (valid-args?    args))    (unicast! client-id :4007)
     :else (step-handler client-id step game args)))
 
-(defn client-handler [client msg]
-  (cond
-    (= msg :connected)    (swap! *clients* assoc  (:id client) client)
-    (= msg :disconnected) (swap! *clients* dissoc (:id client)) ;; TODO: Announce leave and skip player for entire game
-    :else (msg-handler (:id client) msg)))
+(defn client-handler [ch]
+  (let [client (<! ch)]
+    (swap! clients assoc  (:id client) client)
+    (go-loop (msg-handler (:id client) msg))))
+
+    (= msg :disconnected) (swap! clients dissoc (:id client)) ;; TODO: Announce leave and skip player for entire game
 
 
 ;;; Interface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,5 +202,6 @@
   (let [opts {:name "Carcassonne TCP Server"
               :host env/host
               :port env/port
-              :frame (string :utf-8 :delimiters ["\n"])}]
-    (start-server client-handler opts)))
+              :frame (string :utf-8 :delimiters ["\n"])}
+        ch   (start-server opts)]
+    (go-loop (client-handler ch))))
